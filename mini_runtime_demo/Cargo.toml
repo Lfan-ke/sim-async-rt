@@ -1,0 +1,8 @@
+[package]
+name = "mini_runtime_demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mini_runtime = { path = "../mini_runtime" }
+mini_runtime_derive = { path = "../mini_runtime_derive" }

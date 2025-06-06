@@ -1,2 +1,6 @@
-[package]
-name = "sim-async-rt"
+[workspace]
+members = [
+    "mini_runtime",
+    "mini_runtime_derive",
+    "mini_runtime_demo"
+]
