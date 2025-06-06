@@ -11,11 +11,11 @@ pub fn mini_main(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let result = quote! {
         #(#attrs)*
         #vis fn main() {
-            // 直接运行 async 块
-            // 必须在 main 函数体内声明 runtime
             let mut rt = ::mini_runtime::MiniRuntime::new();
-            let fut = async #block;
-            rt.spawn(fut);
+            // 把 main 的 async 块也作为 future spawn
+            ::mini_runtime::SPAWN_QUEUE.with(|queue| {
+                queue.borrow_mut().push(Box::pin(async #block));
+            });
             rt.run();
         }
     };

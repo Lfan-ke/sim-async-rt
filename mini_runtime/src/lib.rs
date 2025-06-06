@@ -7,7 +7,6 @@ use std::{
 };
 use rand::Rng;
 
-/// 简易运行时
 pub struct MiniRuntime {
     ready_queue: VecDeque<Pin<Box<dyn Future<Output = ()> + 'static>>>,
     timer_queue: VecDeque<(Instant, Pin<Box<dyn Future<Output = ()> + 'static>>)>,
@@ -38,13 +37,24 @@ impl MiniRuntime {
     }
 
     pub fn run(&mut self) {
-        while !self.ready_queue.is_empty() || !self.timer_queue.is_empty() {
+        loop {
+            // 加入新spawn的任务
+            SPAWN_QUEUE.with(|queue| {
+                let mut queue = queue.borrow_mut();
+                while let Some(fut) = queue.pop() {
+                    self.spawn(fut);
+                }
+            });
+
+            let mut did_work = false;
+
             // 处理定时任务
             let now = Instant::now();
             while let Some((wake_time, _)) = self.timer_queue.front() {
                 if *wake_time <= now {
                     let (_, task) = self.timer_queue.pop_front().unwrap();
                     self.ready_queue.push_back(task);
+                    did_work = true;
                 } else {
                     break;
                 }
@@ -61,20 +71,25 @@ impl MiniRuntime {
                         self.ready_queue.push_back(task);
                     }
                 }
-            } else {
-                // 没有就绪任务，等待下一个定时任务
+                did_work = true;
+            }
+
+            // 没有就绪任务，等待下一个定时任务或退出
+            if !did_work {
                 if let Some((wake_time, _)) = self.timer_queue.front() {
                     let now = Instant::now();
                     if *wake_time > now {
                         std::thread::sleep(*wake_time - now);
                     }
+                } else if self.ready_queue.is_empty() {
+                    // 没有任何任务了
+                    break;
                 }
             }
         }
     }
 }
 
-// 创建一个什么都不做的Waker
 fn noop_waker() -> Waker {
     unsafe fn clone(_data: *const ()) -> RawWaker { unsafe { noop_raw_waker() } }
     unsafe fn noop(_data: *const ()) {}
@@ -83,7 +98,6 @@ fn noop_waker() -> Waker {
     unsafe { Waker::from_raw(noop_raw_waker()) }
 }
 
-/// 异步sleep
 pub async fn sleep(dur: Duration) {
     struct Sleep { wake_time: Instant }
     impl Future for Sleep {
@@ -99,17 +113,29 @@ pub async fn sleep(dur: Duration) {
     Sleep { wake_time: Instant::now() + dur }.await
 }
 
-/// 生成随机延迟的sleep
 pub async fn random_sleep(min: u64, max: u64) {
     let mut rng = rand::rng();
     let duration = Duration::from_millis(rng.random_range(min..max));
     sleep(duration).await
 }
 
-/// mini_spawn! 要求显式传入 &mut rt
+/// mini_spawn! 只把 future 放到 SPAWN_QUEUE
 #[macro_export]
 macro_rules! mini_spawn {
-    ($rt:expr, $($t:tt)*) => {
-        $rt.spawn(async { $($t)* })
+    ($($t:tt)*) => {
+        $crate::SPAWN_QUEUE.with(|queue| {
+            queue.borrow_mut().push(Box::pin(async { $($t)* }))
+        });
     };
+}
+
+pub use spawn_queue::SPAWN_QUEUE;
+
+mod spawn_queue {
+    use std::{cell::RefCell, future::Future, pin::Pin};
+
+    thread_local! {
+        pub static SPAWN_QUEUE: RefCell<Vec<Pin<Box<dyn Future<Output = ()> + 'static>>>> =
+            RefCell::new(Vec::new());
+    }
 }
