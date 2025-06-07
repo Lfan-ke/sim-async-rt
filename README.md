@@ -1,2 +1,8 @@
 # sim-async-rt
-an simple rust async runtime
+A simple async runtime implementation in Rust.
+
+> cargo run
+
+or
+
+> make run

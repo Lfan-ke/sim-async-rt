@@ -5,3 +5,11 @@ members = [
     "mini_runtime_derive",
     "mini_runtime_demo"
 ]
+
+[workspace.package]
+default-run = "mini_runtime_demo"
+
+[workspace.metadata]
+authors = ["Leo Cheng <chengkelfan@foxmail.com>"]
+description = "A simple async runtime example in Rust."
+license = "MIT"
