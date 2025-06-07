@@ -1,6 +1,6 @@
-use mini_runtime::{random_sleep, mini_spawn, SPAWN_QUEUE, sleep};
-use std::time::Duration;
+use mini_runtime::{SPAWN_QUEUE, mini_spawn, random_sleep, sleep};
 use mini_runtime_derive::mini_main;
+use std::time::Duration;
 
 #[mini_main]
 async fn main() {

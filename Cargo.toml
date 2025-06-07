@@ -1,13 +1,6 @@
 [workspace]
 resolver = "3"
-members = [
-    "mini_runtime",
-    "mini_runtime_derive",
-    "mini_runtime_demo"
-]
-
-[workspace.package]
-default-run = "mini_runtime_demo"
+members = ["mini_runtime", "mini_runtime_derive", "mini_runtime_demo"]
 
 [workspace.metadata]
 authors = ["Leo Cheng <chengkelfan@foxmail.com>"]

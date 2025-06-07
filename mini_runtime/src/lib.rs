@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::{
     collections::VecDeque,
     future::Future,
@@ -5,7 +6,6 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
     time::{Duration, Instant},
 };
-use rand::Rng;
 
 pub struct MiniRuntime {
     ready_queue: VecDeque<Pin<Box<dyn Future<Output = ()> + 'static>>>,
@@ -24,11 +24,7 @@ impl MiniRuntime {
         self.ready_queue.push_back(Box::pin(future));
     }
 
-    pub fn spawn_delayed(
-        &mut self,
-        delay: Duration,
-        future: impl Future<Output = ()> + 'static,
-    ) {
+    pub fn spawn_delayed(&mut self, delay: Duration, future: impl Future<Output = ()> + 'static) {
         let wake_time = Instant::now() + delay;
         self.timer_queue.push_back((wake_time, Box::pin(future)));
         self.timer_queue
@@ -91,15 +87,21 @@ impl MiniRuntime {
 }
 
 fn noop_waker() -> Waker {
-    unsafe fn clone(_data: *const ()) -> RawWaker { unsafe { noop_raw_waker() } }
+    unsafe fn clone(_data: *const ()) -> RawWaker {
+        unsafe { noop_raw_waker() }
+    }
     unsafe fn noop(_data: *const ()) {}
     const VTABLE: RawWakerVTable = RawWakerVTable::new(clone, noop, noop, noop);
-    unsafe fn noop_raw_waker() -> RawWaker { RawWaker::new(std::ptr::null(), &VTABLE) }
+    unsafe fn noop_raw_waker() -> RawWaker {
+        RawWaker::new(std::ptr::null(), &VTABLE)
+    }
     unsafe { Waker::from_raw(noop_raw_waker()) }
 }
 
 pub async fn sleep(dur: Duration) {
-    struct Sleep { wake_time: Instant }
+    struct Sleep {
+        wake_time: Instant,
+    }
     impl Future for Sleep {
         type Output = ();
         fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -110,7 +112,10 @@ pub async fn sleep(dur: Duration) {
             }
         }
     }
-    Sleep { wake_time: Instant::now() + dur }.await
+    Sleep {
+        wake_time: Instant::now() + dur,
+    }
+    .await
 }
 
 pub async fn random_sleep(min: u64, max: u64) {
@@ -129,8 +134,6 @@ macro_rules! mini_spawn {
     };
 }
 
-pub use spawn_queue::SPAWN_QUEUE;
-
 mod spawn_queue {
     use std::{cell::RefCell, future::Future, pin::Pin};
 
@@ -139,3 +142,5 @@ mod spawn_queue {
             RefCell::new(Vec::new());
     }
 }
+
+pub use spawn_queue::SPAWN_QUEUE;
