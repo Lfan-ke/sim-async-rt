@@ -1,4 +1,4 @@
-use mini_runtime::{SPAWN_QUEUE, mini_spawn, random_sleep, sleep, mini_gather, mini_chain};
+use mini_runtime::{SPAWN_QUEUE, mini_chain, mini_gather, mini_spawn, random_sleep, sleep};
 use mini_runtime_derive::mini_main;
 use std::time::Duration;
 
@@ -45,7 +45,11 @@ async fn main() {
         }));
     });
 
-    mini_chain!(od_sleep(0, 700, 0), od_sleep(0, 1000, 1), od_sleep(0, 1000, 2));
+    mini_chain!(
+        od_sleep(0, 700, 0),
+        od_sleep(0, 1000, 1),
+        od_sleep(0, 1000, 2)
+    );
 
     mini_gather![gp_sleep(0, 700), gp_sleep(0, 1000)];
 
@@ -56,7 +60,7 @@ async fn main() {
             println!("Task 4 completed");
         }.await
     }
-    
+
     mini_spawn! {rd_sleep(0, 1000).await}
 
     println!("Main task waiting...");

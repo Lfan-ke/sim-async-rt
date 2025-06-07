@@ -125,14 +125,14 @@ pub async fn random_sleep(min: u64, max: u64) {
 }
 
 /// mini_spawn! 只把 future 放到 SPAWN_QUEUE
-/// 
+///
 /// ```ignore
 ///  mini_spawn! {
 ///     println!("Task 2 started");
 ///     random_sleep(200, 600).await;
 ///     println!("Task 2 completed");
 ///  }
-/// 
+///
 ///  // 会生成：
 ///  SPAWN_QUEUE.with(|queue| {
 ///     queue.borrow_mut().push(Box::pin(async {
@@ -152,7 +152,7 @@ macro_rules! mini_spawn {
 }
 
 /// 批量任务：
-/// 
+///
 /// ```ignore
 /// async fn gp_sleep(..);
 ///
@@ -171,15 +171,15 @@ macro_rules! mini_gather {
 }
 
 /// 顺序批量：
-/// 
+///
 /// ```ignore
 /// async fn rd_sleep(..);
 ///
 /// mini_chain!(rd_sleep(0, 1000), rd_sleep(0, 1000));
 /// // 等同于
 /// mini_spawn! {
-///     rd_sleep(0, 1000).await; 
-///     rd_sleep(0, 1000).await; 
+///     rd_sleep(0, 1000).await;
+///     rd_sleep(0, 1000).await;
 /// }
 /// ```
 #[macro_export]
