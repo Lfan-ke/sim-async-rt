@@ -125,12 +125,71 @@ pub async fn random_sleep(min: u64, max: u64) {
 }
 
 /// mini_spawn! 只把 future 放到 SPAWN_QUEUE
+/// 
+/// ```ignore
+///  mini_spawn! {
+///     println!("Task 2 started");
+///     random_sleep(200, 600).await;
+///     println!("Task 2 completed");
+///  }
+/// 
+///  // 会生成：
+///  SPAWN_QUEUE.with(|queue| {
+///     queue.borrow_mut().push(Box::pin(async {
+///         println!("Task 2 started");
+///         random_sleep(200, 600).await;
+///         println!("Task 2 completed");
+///     }));
+///  });
+/// ```
 #[macro_export]
 macro_rules! mini_spawn {
-    ($($t:tt)*) => {
+    { $($t:tt)* } => {
         $crate::SPAWN_QUEUE.with(|queue| {
             queue.borrow_mut().push(Box::pin(async { $($t)* }))
         });
+    };
+}
+
+/// 批量任务：
+/// 
+/// ```ignore
+/// async fn gp_sleep(..);
+///
+/// mini_gather![gp_sleep(0, 1000), gp_sleep(0, 1000)];
+/// // 等同于
+/// mini_spawn! { gp_sleep(0, 1000).await; }
+/// mini_spawn! { gp_sleep(0, 1000).await; }
+/// ```
+#[macro_export]
+macro_rules! mini_gather {
+    [ $($item:expr),+ $(,)? ] => {
+        $(
+            $crate::mini_spawn! { $item.await; }
+        )+
+    };
+}
+
+/// 顺序批量：
+/// 
+/// ```ignore
+/// async fn rd_sleep(..);
+///
+/// mini_chain!(rd_sleep(0, 1000), rd_sleep(0, 1000));
+/// // 等同于
+/// mini_spawn! {
+///     rd_sleep(0, 1000).await; 
+///     rd_sleep(0, 1000).await; 
+/// }
+/// ```
+#[macro_export]
+macro_rules! mini_chain {
+    ( $($item:expr),+ $(,)? ) => {
+        $crate::mini_spawn! {
+            $(
+                $item.await;
+            )+
+        }
     };
 }
 
