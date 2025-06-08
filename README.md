@@ -1,6 +1,6 @@
-# sim-async-rt
+# mini-async-rt
 
-A simple async runtime implementation in Rust.
+Minimal runtime example for zero-cost stackless async coroutines in Rust.
 
 > cargo run
 
